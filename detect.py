@@ -33,7 +33,7 @@ def can_build():
 def get_opts():
 
 	return [
-		('frt_arch', 'Architecture (pc/pi1/pi2/pi3/pi4/*)', 'pc'),
+		('frt_arch', 'Architecture (pc/pi1/pi2/pi3/pi4/gcw0/*)', 'pc'),
 		('use_llvm', 'Use llvm compiler', no),
 		('use_lto', 'Use link time optimization', no),
 	]
@@ -176,6 +176,20 @@ def configure(env):
 	elif env['frt_arch'] == 'pi4':
 		env.Append(CCFLAGS=['-mcpu=cortex-a72', '-mfpu=neon-fp-armv8', '-mtune=cortex-a72'])
 		env.extra_suffix += '.pi4'
+	elif env['frt_arch'] == 'gcw0':
+		env.Append(CPPDEFINES=['__GCW0__', 'PTHREAD_NO_RENAME'])
+		# we need /usr/include for X11 headers only - there are part of the gcw0-toolchain
+		# docker image; no other headers should be installed/available
+		env.Append(CPPFLAGS=['-I/usr/include', '-fno-strict-aliasing'])
+		# it is needed by ffmepg, but we can add this here anyhow
+		env.Append(LIBS=["iconv"])
+		env['CC'] = 'mipsel-linux-gcc'
+		env['CXX'] = 'mipsel-linux-g++'
+		env['LD'] = 'mipsel-linux-g++'
+		env['AR'] = 'mipsel-linux-ar'
+		env['STRIP'] = 'mipsel-linux-strip'
+		env['arch'] = 'mipsel'
+		env.extra_suffix += '.gcw0'
 	elif env['frt_arch'] != 'pc':
 		env.extra_suffix += '.' + env['frt_arch']
 
@@ -186,7 +200,7 @@ def configure(env):
 	env.Append(CPPFLAGS=['-DFRT_ENABLED', '-DUNIX_ENABLED', '-DGLES2_ENABLED', '-DGLES_ENABLED'])
 	env.Append(LIBS=['pthread'])
 
-	env.Append(FRT_MODULES=['envprobe.cpp'])
+	env.Append(FRT_MODULES=['envprobe.cpp', 'envcompatibility.cpp'])
 	env.Append(FRT_MODULES=['video_fbdev.cpp', 'keyboard_linux_input.cpp', 'mouse_linux_input.cpp'])
 	env.Append(FRT_MODULES=['video_x11.cpp', 'keyboard_x11.cpp', 'mouse_x11.cpp'])
 	if version.major >= 3:
