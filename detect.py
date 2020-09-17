@@ -240,13 +240,12 @@ def configure(env):
     elif env["frt_arch"] != "pc":
         env.extra_suffix += "." + env["frt_arch"]
 
-    if os.path.isfile(sysroot + "/usr/include/GLES3/gl3.h") and not os.path.isfile(sysroot + "/opt/vc/include/GLES3/gl3.h"):
-        env.Prepend(CPPPATH=[sysroot + "/usr/include"])
-
     if env["frt_arch"].startswith("pi"):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
 
-    env.Append(CFLAGS=["-std=gnu11"])  # for libwebp (maybe more in the future)
+    if sysroot:
+        env.Append(CCFLAGS=["-sysroot=" + sysroot])
+
     env.Append(CPPFLAGS=["-DFRT_ENABLED", "-DUNIX_ENABLED", "-DGLES2_ENABLED", "-DGLES_ENABLED"])
     env.Append(LIBS=["pthread"])
 
