@@ -1,5 +1,5 @@
-import os
-import sys
+import os, sys, errno
+import subprocess
 
 
 import version
@@ -66,6 +66,15 @@ def check(env, key):
     else:
         return env[key] == "yes"
 
+
+def checkexe(exe):
+
+    try:
+        subprocess.call(exe)
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            return False
+    return True
 
 def checkcfg(env, cmd):
 
@@ -192,6 +201,14 @@ def configure(env):
         if version.major == 2 or (version.major == 3 and version.minor == 0):
             env.Append(CCFLAGS=["-ffast-math"])
 
+    if checkexe(["arm-linux-gnueabihf-gcc", "--version"]):
+        print("*** Using arm-linux-gnueabihf toolchain by default.")
+        env["CC"] = "arm-linux-gnueabihf-gcc"
+        env["CXX"] = "arm-linux-gnueabihf-g++"
+        env["LD"] = "arm-linux-gnueabihf-g++"
+        env["AR"] = "arm-linux-gnueabihf-ar"
+        env["STRIP"] = "arm-linux-gnueabihf-strip"
+
     if env["frt_arch"] == "pi1":
         env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
         env.extra_suffix += ".pi1"
@@ -211,6 +228,8 @@ def configure(env):
         env.Append(CPPFLAGS=["-I/usr/include", "-fno-strict-aliasing"])
         # it is needed by ffmepg, but we can add this here anyhow
         env.Append(LIBS=["iconv"])
+        if not checkexe(["mipsel-linux-gcc", "--version"]):
+           print("*** Cannot find mipsel-linux toolchain.")
         env["CC"] = "mipsel-linux-gcc"
         env["CXX"] = "mipsel-linux-g++"
         env["LD"] = "mipsel-linux-g++"
