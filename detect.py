@@ -212,16 +212,16 @@ def configure(env):
     env.Append(CCFLAGS=["-fno-strict-aliasing"]) # less warnings
 
     if env["frt_arch"] == "pi1":
-        env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
+        env.Append(CCFLAGS=["-D_rpi_", "-mcpu=arm1176jzf-s", "-mfpu=vfp"])
         env.extra_suffix += ".pi1"
     elif env["frt_arch"] == "pi2":
-        env.Append(CCFLAGS=["-mcpu=cortex-a7", "-mfpu=neon-vfpv4"])
+        env.Append(CCFLAGS=["-D_rpi_", "-mcpu=cortex-a7", "-mfpu=neon-vfpv4"])
         env.extra_suffix += ".pi2"
     elif env["frt_arch"] == "pi3":
-        env.Append(CCFLAGS=["-mcpu=cortex-a53", "-mfpu=neon-fp-armv8"])
+        env.Append(CCFLAGS=["-D_rpi_", "-mcpu=cortex-a53", "-mfpu=neon-fp-armv8"])
         env.extra_suffix += ".pi3"
     elif env["frt_arch"] == "pi4":
-        env.Append(CCFLAGS=["-mcpu=cortex-a72", "-mfpu=neon-fp-armv8", "-mtune=cortex-a72"])
+        env.Append(CCFLAGS=["-D_rpi_", "-mcpu=cortex-a72", "-mfpu=neon-fp-armv8", "-mtune=cortex-a72"])
         env.extra_suffix += ".pi4"
     elif env["frt_arch"] == "gcw0":
         env.Append(CPPDEFINES=["__GCW0__", "PTHREAD_NO_RENAME"])
