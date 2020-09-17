@@ -222,7 +222,7 @@ def configure(env):
         env.extra_suffix += "." + env["frt_arch"]
 
     if os.path.isfile(sysroot + "/usr/include/GLES3/gl3.h") and not os.path.isfile(sysroot + "/opt/vc/include/GLES3/gl3.h"):
-        env.Prepend(CPPPATH=[sysroot + "/usr/include/miniupnpc"])
+        env.Prepend(CPPPATH=[sysroot + "/usr/include"])
 
     if env["frt_arch"].startswith("pi"):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
