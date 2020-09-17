@@ -244,7 +244,7 @@ def configure(env):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
 
     if sysroot:
-        env.Append(CCFLAGS=["-sysroot=" + sysroot])
+        env.Append(CCFLAGS=["--sysroot=" + sysroot])
 
     env.Append(CPPFLAGS=["-DFRT_ENABLED", "-DUNIX_ENABLED", "-DGLES2_ENABLED", "-DGLES_ENABLED"])
     env.Append(LIBS=["pthread"])
