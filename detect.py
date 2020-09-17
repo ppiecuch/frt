@@ -227,7 +227,7 @@ def configure(env):
         env.Append(CPPDEFINES=["__GCW0__", "PTHREAD_NO_RENAME"])
         # we need /usr/include for X11 headers only - they are part of the gcw0-toolchain
         # docker image; no other headers should be installed/available
-        env.Append(CPPFLAGS=["-I/usr/include"])
+        env.Append(CPPPATH=["/usr/include"])
         # it is needed by ffmepg, but we can add this here anyhow
         env.Append(LIBS=["iconv"])
         if not checkexe(["mipsel-linux-gcc", "--version"]):
@@ -261,6 +261,7 @@ def configure(env):
     env.Append(FRT_MODULES=["dl/x11.gen.cpp", "dl/egl.gen.cpp"])
     if os.path.isfile(sysroot + "/opt/vc/include/bcm_host.h"):
         env.Append(FRT_MODULES=["video_bcm.cpp", "dl/bcm.gen.cpp"])
+        env.Append(CPPPATH=["/opt/vc/include"])
     if os.path.isfile(sysroot + "/usr/include/gbm.h"):
         env.Append(FRT_MODULES=["video_kmsdrm.cpp", "dl/gbm.gen.cpp", "dl/drm.gen.cpp"])
     env.Append(FRT_MODULES=["dl/gles2.gen.cpp"])
