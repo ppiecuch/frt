@@ -11,6 +11,18 @@ else:
     yes = "yes"
     no = "no"
 
+sysroot = os.environ["SYSROOT"] if "SYSROOT" in os.environ else ""
+pkgenvstr = ""
+if sysroot:
+    pkgenvstr = (
+        "PKG_CONFIG_DIR= PKG_CONFIG_PATH= PKG_CONFIG_LIBDIR="
+        + sysroot
+        + "/usr/share/pkgconfig:"
+        + sysroot
+        + "/opt/vc/lib/pkgconfig"
+        + " "
+    )
+
 
 def is_active():
 
@@ -55,6 +67,11 @@ def check(env, key):
         return env[key] == "yes"
 
 
+def checkcfg(env, cmd):
+
+        env.ParseConfig("%s %s" % (pkgenvstr, cmd))
+
+
 def configure(env):
 
     import methods
@@ -82,66 +99,62 @@ def configure(env):
     env.Append(CCFLAGS=["-pipe"])
     env.Append(LINKFLAGS=["-pipe"])
 
-    sysroot = os.environ["SYSROOT"] if "SYSROOT" in os.environ else ""
-    if sysroot:
-        env.Prepend(CPPPATH=[sysroot])
-
-    if os.system("pkg-config --exists alsa") == 0:
+    if os.system(pkgenvstr + "pkg-config --exists alsa") == 0:
         print("Enabling ALSA")
         env.Append(CPPFLAGS=["-DALSA_ENABLED"])
-        env.ParseConfig("pkg-config alsa --cflags --libs")
+        checkcfg(env, "pkg-config alsa --cflags --libs")
     else:
         print("ALSA libraries not found, disabling driver")
 
     # common
     if not check(env, "builtin_freetype"):
-        env.ParseConfig("pkg-config freetype2 --cflags --libs")
+        checkcfg(env, "pkg-config freetype2 --cflags --libs")
     if not check(env, "builtin_libpng"):
-        env.ParseConfig("pkg-config libpng --cflags --libs")
+        checkcfg(env, "pkg-config libpng --cflags --libs")
     if not check(env, "builtin_zlib"):
-        env.ParseConfig("pkg-config zlib --cflags --libs")
+        checkcfg(env, "pkg-config zlib --cflags --libs")
     if not check(env, "builtin_libwebp"):
-        env.ParseConfig("pkg-config libwebp --cflags --libs")
+        checkcfg(env, "pkg-config libwebp --cflags --libs")
     if not check(env, "builtin_libtheora"):
-        env.ParseConfig("pkg-config theora theoradec --cflags --libs")
+        checkcfg(env, "pkg-config theora theoradec --cflags --libs")
     if not check(env, "builtin_libvorbis"):
-        env.ParseConfig("pkg-config vorbis vorbisfile --cflags --libs")
+        checkcfg(env, "pkg-config vorbis vorbisfile --cflags --libs")
     if not check(env, "builtin_opus"):
-        env.ParseConfig("pkg-config opus opusfile --cflags --libs")
+        checkcfg(env, "pkg-config opus opusfile --cflags --libs")
     if not check(env, "builtin_libogg"):
-        env.ParseConfig("pkg-config ogg --cflags --libs")
+        checkcfg(env, "pkg-config ogg --cflags --libs")
     # 2.1 / 3.0
     if version.major == 2 or (version.major == 3 and version.minor == 0):
         if not check(env, "builtin_openssl") and check(env, "module_openssl_enabled"):
-            env.ParseConfig("pkg-config openssl --cflags --libs")
+            checkcfg(env, "pkg-config openssl --cflags --libs")
     # 3.0+
     if version.major == 3:
         if not check(env, "builtin_libvpx"):
-            env.ParseConfig("pkg-config vpx --cflags --libs")
+            checkcfg(env, "pkg-config vpx --cflags --libs")
         if not check(env, "builtin_bullet"):
-            env.ParseConfig("pkg-config bullet --cflags --libs")
+            checkcfg(env, "pkg-config bullet --cflags --libs")
         if not check(env, "builtin_enet"):
-            env.ParseConfig("pkg-config libenet --cflags --libs")
+            checkcfg(env, "pkg-config libenet --cflags --libs")
         if not check(env, "builtin_zstd"):
-            env.ParseConfig("pkg-config libzstd --cflags --libs")
+            checkcfg(env, "pkg-config libzstd --cflags --libs")
         if not check(env, "builtin_pcre2"):
-            env.ParseConfig("pkg-config libpcre2-32 --cflags --libs")
+            checkcfg(env, "pkg-config libpcre2-32 --cflags --libs")
     # 3.1+
     if version.major == 3 and version.minor >= 1:
         if not check(env, "builtin_mbedtls") and check(env, "module_openssl_enabled"):
             env.Append(LIBS=["mbedtls", "mbedcrypto", "mbedx509"])
         if not check(env, "builtin_wslay") and check(env, "module_openssl_enabled"):
-            env.ParseConfig("pkg-config libwslay --cflags --libs")
+            checkcfg(env, "pkg-config libwslay --cflags --libs")
         if not check(env, "builtin_miniupnpc"):
-            env.Prepend(CPPPATH=["/usr/include/miniupnpc"])
+            env.Prepend(CPPPATH=[sysroot + "/usr/include/miniupnpc"])
             env.Append(LIBS=["miniupnpc"])
 
     # pkg-config returns 0 when the lib exists...
-    found_udev = not os.system("pkg-config --exists libudev")
+    found_udev = not os.system(pkgenvstr + "pkg-config --exists libudev")
     if found_udev:
         print("Enabling udev support")
         env.Append(CPPFLAGS=["-DUDEV_ENABLED"])
-        env.ParseConfig("pkg-config libudev --cflags --libs")
+        checkcfg(env, "pkg-config libudev --cflags --libs")
         env.Append(CPPFLAGS=["-DJOYDEV_ENABLED"])
         if version.major > 2:
             env.Append(FRT_MODULES=["import/joypad_linux.cpp"])
@@ -193,7 +206,7 @@ def configure(env):
         env.extra_suffix += ".pi4"
     elif env["frt_arch"] == "gcw0":
         env.Append(CPPDEFINES=["__GCW0__", "PTHREAD_NO_RENAME"])
-        # we need /usr/include for X11 headers only - there are part of the gcw0-toolchain
+        # we need /usr/include for X11 headers only - they are part of the gcw0-toolchain
         # docker image; no other headers should be installed/available
         env.Append(CPPFLAGS=["-I/usr/include", "-fno-strict-aliasing"])
         # it is needed by ffmepg, but we can add this here anyhow
@@ -207,6 +220,9 @@ def configure(env):
         env.extra_suffix += ".gcw0"
     elif env["frt_arch"] != "pc":
         env.extra_suffix += "." + env["frt_arch"]
+
+    if os.path.isfile(sysroot + "/usr/include/GLES3/gl3.h") and not os.path.isfile(sysroot + "/opt/vc/include/GLES3/gl3.h"):
+        env.Prepend(CPPPATH=[sysroot + "/usr/include/miniupnpc"])
 
     if env["frt_arch"].startswith("pi"):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
@@ -223,9 +239,9 @@ def configure(env):
     else:
         env.Append(FRT_MODULES=["import/key_mapping_x11_2.cpp"])
     env.Append(FRT_MODULES=["dl/x11.gen.cpp", "dl/egl.gen.cpp"])
-    if os.path.isfile("%s/opt/vc/include/bcm_host.h"%sysroot):
+    if os.path.isfile(sysroot + "/opt/vc/include/bcm_host.h"):
         env.Append(FRT_MODULES=["video_bcm.cpp", "dl/bcm.gen.cpp"])
-    if os.path.isfile("%s/usr/include/gbm.h"%sysroot):
+    if os.path.isfile(sysroot + "/usr/include/gbm.h"):
         env.Append(FRT_MODULES=["video_kmsdrm.cpp", "dl/gbm.gen.cpp", "dl/drm.gen.cpp"])
     env.Append(FRT_MODULES=["dl/gles2.gen.cpp"])
     if version.major >= 3:
