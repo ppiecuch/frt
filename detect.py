@@ -209,6 +209,8 @@ def configure(env):
         env["AR"] = "arm-linux-gnueabihf-ar"
         env["STRIP"] = "arm-linux-gnueabihf-strip"
 
+    env.Append(CCFLAGS=["-fno-strict-aliasing"]) # less warnings
+
     if env["frt_arch"] == "pi1":
         env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
         env.extra_suffix += ".pi1"
@@ -225,7 +227,7 @@ def configure(env):
         env.Append(CPPDEFINES=["__GCW0__", "PTHREAD_NO_RENAME"])
         # we need /usr/include for X11 headers only - they are part of the gcw0-toolchain
         # docker image; no other headers should be installed/available
-        env.Append(CPPFLAGS=["-I/usr/include", "-fno-strict-aliasing"])
+        env.Append(CPPFLAGS=["-I/usr/include"])
         # it is needed by ffmepg, but we can add this here anyhow
         env.Append(LIBS=["iconv"])
         if not checkexe(["mipsel-linux-gcc", "--version"]):
