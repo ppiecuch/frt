@@ -247,6 +247,7 @@ def configure(env):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
         env.Append(CPPDEFINES=["_rpi_"])
         env.Append(LIBS=["rt"])
+        env["arch"] = "arm"
 
     if sysroot:
         env.Append(CCFLAGS=["--sysroot=" + sysroot])
