@@ -246,6 +246,7 @@ def configure(env):
     if env["frt_arch"].startswith("pi"):
         env.Append(CCFLAGS=["-mfloat-abi=hard", "-mlittle-endian", "-munaligned-access"])
         env.Append(CPPDEFINES=["_rpi_"])
+        env.Append(LIBS=["rt"])
 
     if sysroot:
         env.Append(CCFLAGS=["--sysroot=" + sysroot])
