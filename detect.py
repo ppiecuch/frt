@@ -209,7 +209,8 @@ def configure(env):
         env["AR"] = "arm-linux-gnueabihf-ar"
         env["STRIP"] = "arm-linux-gnueabihf-strip"
 
-    env.Append(CCFLAGS=["-fno-strict-aliasing"]) # less warnings
+    # cleanup some false-positives warnings of gcc 4.8/4.9
+    env.Append(CCFLAGS=["-fno-strict-aliasing", "-fno-strict-overflow"])
 
     if env["frt_arch"] == "pi1":
         env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
