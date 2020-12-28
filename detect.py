@@ -3,6 +3,7 @@ import subprocess
 
 
 import version
+import methods
 
 if version.major > 2:
     yes = True
@@ -191,16 +192,6 @@ def configure(env):
             }
         )
 
-    if env["target"] == "release":
-        env.Append(CCFLAGS=["-O3", "-fomit-frame-pointer"])
-    elif env["target"] == "release_debug":
-        env.Append(CCFLAGS=["-O3", "-DDEBUG_ENABLED"])
-    elif env["target"] == "debug":
-        env.Append(CCFLAGS=["-g2", "-DDEBUG_ENABLED", "-DDEBUG_MEMORY_ENABLED"])
-    if env["target"].startswith("release"):
-        if version.major == 2 or (version.major == 3 and version.minor == 0):
-            env.Append(CCFLAGS=["-ffast-math"])
-
     if checkexe(["arm-linux-gnueabihf-gcc", "--version"]):
         print("*** Using arm-linux-gnueabihf toolchain by default.")
         env["CC"] = "arm-linux-gnueabihf-gcc"
@@ -211,8 +202,9 @@ def configure(env):
 
     # cleanup some false-positives warnings of gcc 4.8/4.9
     env.Append(CCFLAGS=["-fno-strict-aliasing", "-fno-strict-overflow"])
+    env.Append(CXXFLAGS=["-Wno-class-memaccess", "-Wno-sign-compare"])
 
-    if env["frt_arch"] == "pi1":
+    if env["frt_arch"] == "pi1" or env["frt_arch"] == "piz":
         env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
         env.extra_suffix += ".pi1"
     elif env["frt_arch"] == "pi2":
@@ -226,11 +218,8 @@ def configure(env):
         env.extra_suffix += ".pi4"
     elif env["frt_arch"] == "gcw0":
         env.Append(CPPDEFINES=["__GCW0__", "PTHREAD_NO_RENAME"])
-        # we need /usr/include for X11 headers only - they are part of the gcw0-toolchain
-        # docker image; no other headers should be installed/available
-        env.Append(CCFLAGS=["-I/usr/include"])
-        # it is needed by ffmepg, but we can add this here anyhow
-        env.Append(LIBS=["iconv"])
+        # for building only
+        env.Append(CPPPATH=["#platform/frt/bits/Xorg"])
         if not checkexe(["mipsel-linux-gcc", "--version"]):
            print("*** Cannot find mipsel-linux toolchain.")
         env["CC"] = "mipsel-linux-gcc"
@@ -251,6 +240,23 @@ def configure(env):
 
     if sysroot:
         env.Append(CCFLAGS=["--sysroot=" + sysroot])
+
+    opt = "-O3"
+    if methods.using_gcc(env):
+        # gcc 10.2 for mips crash for -O3
+        ver = methods.get_compiler_version(env) or [-1, -1]
+        if ver[0] == 10 and ver[1] == 2 and env["arch"].startswith("mips"):
+            print("Warning: -O2 is selected for release build optimization.")
+            opt = "-O2"
+    if env["target"] == "release":
+        env.Append(CCFLAGS=[opt, "-fomit-frame-pointer"])
+    elif env["target"] == "release_debug":
+        env.Append(CCFLAGS=[opt, "-DDEBUG_ENABLED"])
+    elif env["target"] == "debug":
+        env.Append(CCFLAGS=["-g2", "-DDEBUG_ENABLED", "-DDEBUG_MEMORY_ENABLED"])
+    if env["target"].startswith("release"):
+        if version.major == 2 or (version.major == 3 and version.minor == 0):
+            env.Append(CCFLAGS=["-ffast-math"])
 
     env.Append(CPPFLAGS=["-DFRT_ENABLED", "-DUNIX_ENABLED", "-DGLES2_ENABLED", "-DGLES_ENABLED"])
     env.Append(LIBS=["pthread"])
