@@ -45,9 +45,10 @@ def can_build():
 def get_opts():
 
     return [
-        ("frt_arch", "Architecture (pc/pi1/pi2/pi3/pi4/gcw0/*)", "pc"),
-        ("use_llvm", "Use llvm compiler", no),
-        ("use_lto", "Use link time optimization", no),
+        ('frt_arch', 'Architecture (pc/pi1/pi2/pi3/pi4/gcw0/*)', 'pc'),
+        ('use_llvm', 'Use llvm compiler', no),
+        ('use_lto', 'Use link time optimization', no),
+        ('pulseaudio', 'Detect and use pulseaudio', no),
     ]
 
 
@@ -115,6 +116,14 @@ def configure(env):
         checkcfg(env, "pkg-config alsa --cflags --libs")
     else:
         print("ALSA libraries not found, disabling driver")
+
+    if check(env, 'pulseaudio'):
+        if os.system("pkg-config --exists libpulse") == 0:
+            print("Enabling PulseAudio")
+            env.Append(CPPDEFINES=["PULSEAUDIO_ENABLED"])
+            env.ParseConfig("pkg-config --cflags --libs libpulse")
+        else:
+            print("PulseAudio libraries not found, disabling driver")
 
     # common
     if not check(env, "builtin_freetype"):
