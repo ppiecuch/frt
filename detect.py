@@ -45,7 +45,7 @@ def can_build():
 def get_opts():
 
     return [
-        ("frt_arch", "Architecture (pc/pi1/pi2/pi3/pi4/gcw0/*)", "pc"),
+        ("frt_arch", "Architecture (pc/pi1/pi2/pi3/pi4/gcw0/odroid/*)", "pc"),
         ("use_llvm", "Use llvm compiler", no),
         ("use_lto", "Use link time optimization", no),
         ("pulseaudio", "Detect and use pulseaudio", no),
@@ -81,6 +81,22 @@ def checkexe(exe):
 def checkcfg(env, cmd):
 
         env.ParseConfig("%s %s" % (pkgenvstr, cmd))
+
+def using_gcc_min_ver(env, major = -1, minor = -1):
+
+    if methods.using_gcc(env):
+        ver = methods.get_compiler_version(env) or [-1, -1]
+        if ver[0] > major or (ver[0] == major and ver[1] >= minor):
+            return True
+    return False
+
+def using_gcc_ver(env, major, minor):
+
+    if methods.using_gcc(env):
+        ver = methods.get_compiler_version(env) or [-1, -1]
+        if ver[0] == major and ver[1] == minor:
+            return True
+    return False
 
 
 def configure(env):
@@ -211,7 +227,9 @@ def configure(env):
 
     # cleanup some false-positives warnings of gcc 4.8/4.9
     env.Append(CCFLAGS=["-fno-strict-aliasing", "-fno-strict-overflow"])
-    env.Append(CXXFLAGS=["-Wno-class-memaccess", "-Wno-sign-compare"])
+    env.Append(CXXFLAGS=["-Wno-sign-compare"])
+    if using_gcc_min_ver(env, 8):
+        env.Append(CXXFLAGS=["-Wno-class-memaccess"])
 
     if env["frt_arch"] == "pi1" or env["frt_arch"] == "piz":
         env.Append(CCFLAGS=["-mcpu=arm1176jzf-s", "-mfpu=vfp"])
@@ -238,6 +256,21 @@ def configure(env):
         env["STRIP"] = "mipsel-linux-strip"
         env["arch"] = "mipsel"
         env.extra_suffix += ".gcw0"
+    elif env["frt_arch"] == "odroid":
+        env.Append(CPPDEFINES=["__odroid__"])
+        # for building only
+        env.Append(CPPPATH=["#platform/frt/bits/Xorg"])
+        if not checkexe(["aarch64-linux-gnu-gcc", "--version"]):
+           print("*** Cannot find aarch64-gnu-linux toolchain.")
+        if os.path.isdir("/opt/usr/include/api"):
+           env.Append(CCFLAGS=["-I/opt/usr/include/api"])
+        env["CC"] = "aarch64-linux-gnu-gcc"
+        env["CXX"] = "aarch64-linux-gnu-g++"
+        env["LD"] = "aarch64-linux-gnu-g++"
+        env["AR"] = "aarch64-linux-gnu-ar"
+        env["STRIP"] = "aarch64-linux-gnu-strip"
+        env["arch"] = "aarch64"
+        env.extra_suffix += ".odroid"
     elif env["frt_arch"] != "pc":
         env.extra_suffix += "." + env["frt_arch"]
 
@@ -251,12 +284,10 @@ def configure(env):
         env.Append(CCFLAGS=["--sysroot=" + sysroot])
 
     opt = "-O3"
-    if methods.using_gcc(env):
+    if using_gcc_ver(env, 10, 2) and env["arch"].startswith("mips"):
         # gcc 10.2 for mips crash for -O3
-        ver = methods.get_compiler_version(env) or [-1, -1]
-        if ver[0] == 10 and ver[1] == 2 and env["arch"].startswith("mips"):
-            print("Warning: -O2 is selected for release build optimization.")
-            opt = "-O2"
+        print("Warning: -O2 is selected for release build optimization.")
+        opt = "-O2"
     if env["target"] == "release":
         env.Append(CCFLAGS=[opt, "-fomit-frame-pointer"])
     elif env["target"] == "release_debug":

@@ -498,7 +498,7 @@ public:
 #if VERSION_MAJOR == 2
 		_ensure_data_dir();
 #else
-		_ensure_user_data_dir();
+		OS::get_singleton()->ensure_user_data_dir();
 		return OK;
 #endif
 	}
