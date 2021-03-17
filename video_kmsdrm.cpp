@@ -39,6 +39,11 @@
 #include "bits/egl_base_context.h"
 #include "bits/frt_load_gles.h"
 
+// Reference:
+// ----------
+// https://forum.odroid.com/viewtopic.php?t=38045
+// https://github.com/OtherCrashOverride/sdl-go2/blob/master/src/video/kmsdrm/SDL_kmsdrmvideo.c
+
 namespace frt {
 
 class EGLKMSDRMContext : public EGLBaseContext {

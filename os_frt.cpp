@@ -507,7 +507,6 @@ public:
 		OS::get_singleton()->ensure_user_data_dir();
 #endif
 		return OK;
-#endif
 	}
 	void finalize() {
 		if (main_loop)
