@@ -28,15 +28,19 @@ die() {
 	exit 1
 }
 
+usage() {
+	die "usage: release.sh [--pulse] arch tag..."
+}
+
 print_header() {
-	echo "Building frt:$fver tag:$tag arch:$arch..."
+	echo "Building frt:$fver tag:$tag arch:$arch suffix:[$suffix]..."
 }
 
 release() {
 	local bin
 	[ -d releases ] || return
-	bin=releases/frt_${fver}_${tag}_${arch}.bin
-	cp tag_$tag/bin/godot.frt.opt.$arch $bin
+	bin=releases/frt_${fver}_${tag}_${arch}${suffix}.bin
+	cp tag_$tag/bin/godot.frt.opt$suffix.$arch $bin
 	strip $bin
 }
 
@@ -50,6 +54,7 @@ build_21() {
 		builtin_zlib=no \
 		builtin_freetype=no \
 		module_openssl_enabled=no \
+		$pulse \
 		$patch \
 	$build_common )
 	release
@@ -62,6 +67,7 @@ build_30() {
 		builtin_freetype=yes \
 		module_openssl_enabled=no \
 		module_webm_enabled=no \
+		$pulse \
 	$build_common )
 	release
 }
@@ -77,11 +83,12 @@ build_31() {
 		module_mbedtls_enabled=no \
 		module_websocket_enabled=no \
 		module_webm_enabled=no \
+		$pulse \
 	$build_common )
 	release
 }
 
-build_32() {
+build_33() {
 	print_header
 	( cd tag_$tag ; scons frt_arch=$arch \
 		warnings=no \
@@ -92,11 +99,28 @@ build_32() {
 		module_mbedtls_enabled=no \
 		module_websocket_enabled=no \
 		module_webm_enabled=no \
+		$pulse \
 	$build_common )
 	release
 }
 
-[ $# -gt 1 ] || die "usage: release.sh arch tag..."
+build_32() {
+	echo "WARNING: 3.2.x deprecated upstream"
+	build_33
+}
+
+[ $# -gt 1 ] || usage
+
+if [ $1 = "--pulse" ] ; then
+	pulse="pulseaudio=yes extra_suffix=pulse"
+	suffix=".pulse"
+	shift
+else
+	pulse="pulseaudio=no"
+	suffix=""
+fi
+
+[ $# -gt 1 ] || usage
 
 varch=$1
 case $varch in
@@ -116,7 +140,7 @@ while [ $# -gt 0 ] ; do
 			[ -f $frth ] || die "release.sh: $frth not found."
 			gver=`echo $tag | cut -b -2`
 			case $gver in
-				21|30|31|32) ;;
+				21|30|31|32|33) ;;
 				*) die "release.sh: unsupported godot version: $gver."
 			esac
 			fver=`grep FRT_VERSION $frth \

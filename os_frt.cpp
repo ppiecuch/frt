@@ -502,6 +502,8 @@ public:
 #endif
 		last_click = 0;
 #if VERSION_MINOR < 2 || (VERSION_MINOR == 2 && VERSION_PATCH < 4)
+		_ensure_data_dir();
+#elif VERSION_MINOR < 3
 		_ensure_user_data_dir();
 #else
 		OS::get_singleton()->ensure_user_data_dir();
