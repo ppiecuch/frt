@@ -86,7 +86,9 @@ def check(env, key):
 def checkexe(exe):
 
 	try:
-		subprocess.call(exe)
+		output = subprocess.check_output(exe).strip().splitlines()
+		for ln in output:
+			print("> " + ln)
 	except OSError as e:
 		if e.errno == errno.ENOENT:
 			return False
@@ -216,7 +218,7 @@ def configure(env):
 		else:
 			checkpkgcfg(env, 'pkg-config libudev --cflags --libs')
 		env.Append(CPPFLAGS=['-DJOYDEV_ENABLED'])
-		env.Append(FRT_MODULES=['import/joypad_linux.cpp'])
+		env.Append(FRT_MODULES=['include/joypad_linux.cpp'])
 	else:
 		print('libudev development libraries not found, disabling udev support')
 
@@ -247,12 +249,6 @@ def configure(env):
 		env['AR'] = 'arm-linux-gnueabihf-ar'
 		env['STRIP'] = 'arm-linux-gnueabihf-strip'
 
-	# cleanup some false-positives warnings of gcc 4.8/4.9
-	env.Append(CCFLAGS=['-fno-strict-aliasing', '-fno-strict-overflow'])
-	env.Append(CXXFLAGS=['-Wno-sign-compare'])
-	if using_gcc_min_ver(env, 8):
-		env.Append(CXXFLAGS=['-Wno-class-memaccess'])
-
 	if env['frt_arch'] == 'pi1' or env['frt_arch'] == 'piz':
 		env.Append(CCFLAGS=['-mcpu=arm1176jzf-s', '-mfpu=vfp'])
 		env.extra_suffix += '.pi1'
@@ -278,6 +274,7 @@ def configure(env):
 		env['STRIP'] = 'mipsel-linux-strip'
 		env['arch'] = 'mipsel'
 		env.extra_suffix += '.gcw0'
+		env.Append(LIBS=['atomic'])
 	elif env['frt_arch'] == 'odroid':
 		env.Append(CPPDEFINES=['__odroid__'])
 		# for building only
@@ -304,6 +301,12 @@ def configure(env):
 
 	if sysroot:
 		env.Append(CCFLAGS=['--sysroot=' + sysroot])
+
+	# cleanup some false-positives warnings of gcc 4.8/4.9
+	env.Append(CCFLAGS=['-fno-strict-aliasing', '-fno-strict-overflow'])
+	env.Append(CXXFLAGS=['-Wno-sign-compare'])
+	if using_gcc_min_ver(env, 8):
+		env.Append(CXXFLAGS=['-Wno-class-memaccess'])
 
 	opt = '-O3'
 	if using_gcc_ver(env, 10, 2) and env['arch'].startswith('mips'):
