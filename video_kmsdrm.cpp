@@ -43,6 +43,7 @@
 // ----------
 // https://forum.odroid.com/viewtopic.php?t=38045
 // https://github.com/OtherCrashOverride/sdl-go2/blob/master/src/video/kmsdrm/SDL_kmsdrmvideo.c
+// https://forum.odroid.com/viewtopic.php?f=193&t=39708
 
 namespace frt {
 
